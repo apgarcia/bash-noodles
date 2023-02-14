@@ -1,0 +1,28 @@
+#! /usr/bin/env bash
+
+mapfile passwd_a </etc/passwd
+mapfile group_a </etc/group
+for (( i=0; i < ${#passwd_a[@]}; i++ )); do
+    IFS=":"
+    read login x uid pwdgid rest <<< ${passwd_a[i]}
+    printf "uid=%d(%s) gid=%d(" $uid $login $pwdgid
+    for (( j = 0; j < ${#group_a[@]}; j++)); do
+	read group x grpgid members <<< ${group_a[$j]}
+	if [ $pwdgid -eq $grpgid ]; then
+	    printf "%s) groups=%d(%s)" $group $pwdgid $group
+	    break
+	fi
+    done
+    for (( k = 0; k < ${#group_a[@]}; k++)); do
+	IFS=":"
+	read group x grpgid members <<< ${group_a[$k]}
+	IFS=","
+	read -a member_a <<< $members
+	for (( l = 0; l < ${#member_a[@]}; l++ )); do
+	    if [ ${member_a[$l]} = $login ]; then
+		printf ",%d(%s)" $grpgid $group
+	    fi
+	done
+    done
+    printf "\n"
+done
